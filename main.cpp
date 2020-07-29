@@ -59,17 +59,14 @@ public:
 		for (int i = 0; i < N; i++) {
 			for (int j = 0; j < N; j++) {
 				if (board[i][j] == 0) {
-					bool legal = false;
-					//TODO: Need to refactor this ugly if/else, might just replace by one statement
-					if (i < N - 1 && board[i+1][j] == opponent_id(id) && find_player_move(id, Move{i+1, j}, 1, 0)) {
-						legal = true;
-					} else if (i >= 1 && board[i-1][j] == opponent_id(id) && find_player_move(id, Move{i-1,j}, -1, 0)) {
-						legal = true;
-					} else if (j < N - 1 && board[i][j+1] == opponent_id(id) && find_player_move(id, Move{i,j+1}, 0, 1)) {
-						legal = true;
-					} else if (j >= 1 && board[i][j-1] == opponent_id(id) && find_player_move(id, Move{i,j-1}, 0, -1)) {
-						legal = true;
-					}
+					bool legal = (i < N - 1 && board[i+1][j] == opponent_id(id) && find_player_move(id, Move{i+1, j}, 1, 0)) || 
+								 (i >= 1 && board[i-1][j] == opponent_id(id) && find_player_move(id, Move{i-1,j}, -1, 0)) || 
+								 (j < N - 1 && board[i][j+1] == opponent_id(id) && find_player_move(id, Move{i,j+1}, 0, 1)) || 
+								 (j >= 1 && board[i][j-1] == opponent_id(id) && find_player_move(id, Move{i,j-1}, 0, -1)) || 
+								 (i < N - 1 && j < N - 1 && board[i+1][j+1] == opponent_id(id) && find_player_move(id, Move{i+1, j+1}, 1, 1)) ||
+								 (i >= 1 && j >= 1 && board[i-1][j-1] == opponent_id(id) && find_player_move(id, Move{i-1, j-1}, -1, -1)) || 
+								 (i >= 1 && j < N - 1 && board[i-1][j+1] == opponent_id(id) && find_player_move(id, Move{i-1, j+1}, -1, 1)) || 
+								 (i < N - 1 && j >= 1 && board[i+1][j-1] == opponent_id(id) && find_player_move(id, Move{i+1, j-1}, 1, -1));
 					if (legal) {
 						moves.push_back(Move{i, j});
 					}
@@ -127,7 +124,6 @@ private:
 	void update_board(Move move, int ply_id) {
 		board[move.i][move.j] = ply_id;
 	}
-
 };
 
 class AI : public Player {
@@ -153,6 +149,7 @@ public:
 	Human(){}
 	~Human(){}
 };
+
 int main(int argc, char**argv) {
 	Reversi reversi {std::unique_ptr<Player>(new Human()), std::unique_ptr<Player>(new Human())};
 	reversi.run();
