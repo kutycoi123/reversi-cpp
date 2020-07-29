@@ -6,10 +6,16 @@
 struct Move{
 	int i, j;
 };	
+inline bool operator==(const Move& lhs, const Move& rhs) {
+	return lhs.i == rhs.i && lhs.i == rhs.i;
+}
+inline bool operator!=(const Move& lhs, const Move& rhs) {
+	return !(lhs == rhs);
+}
 class Player {
 public:
 	int id;
-	virtual Move next_move(const std::vector<Move>&) = 0;
+	virtual Move next_move(const std::vector<Move>&) const = 0;
 	void set_id(int id) {
 		this->id = id;
 	}
@@ -98,23 +104,34 @@ public:
 			std::cout << "|\n";
 		}
 	}
+	Move get_player_move(const Player* ply, std::vector<Move> moves) const {
+		Move move;
+		while (true) {
+			move = ply->next_move(moves);
+			if (std::find(moves.begin(), moves.end(), move) == moves.end()) {
+				std::cout << "Invalid move. Please choose another move";
+				continue;
+			}
+			return move;
+		}
+
+	}
 	bool is_move_legal(Move move) {
 		return true;
 	}
 	void run() {
 		display_board();
 		while (true) {
-			auto ply1_move = ply1->next_move(possible_moves(ply1->id));
-			if (!is_move_legal(ply1_move)) {
-				continue;
+			auto possible_moves_ply1 = possible_moves(ply1->id);
+			if (possible_moves_ply1.size() == 0) {
+				break;
 			}
+			auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
 			update_board(ply1_move, ply1->id);
 			//ply2.acknowledge(ply1_move)
 			display_board();
-			auto ply2_move = ply2->next_move(possible_moves(ply2->id));
-			if (!is_move_legal(ply2_move)) {
-				continue;
-			}
+			auto possible_moves_ply2 = possible_moves(ply2->id);
+			auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
 			update_board(ply2_move, ply2->id);
 			display_board();
 			// ply1.acknowledge(ply1_move)
@@ -128,7 +145,7 @@ private:
 
 class AI : public Player {
 public:
-	Move next_move(const std::vector<Move>& possible_moves) override {
+	Move next_move(const std::vector<Move>& possible_moves) const override {
 		return Move{0,0};
 	}
 	AI(){}
@@ -137,7 +154,7 @@ public:
 
 class Human : public Player {
 public:
-	Move next_move(const std::vector<Move>& possible_moves) override {
+	Move next_move(const std::vector<Move>& possible_moves) const override {
 		int i, j;
 		std::cout << "Choose row: ";
 		std::cin >> i;
