@@ -26,8 +26,8 @@ public:
 	std::unique_ptr<Player> ply2;
 	Reversi(std::unique_ptr<Player> ply1, std::unique_ptr<Player> ply2) :
 			ply1(std::move(ply1)), ply2(std::move(ply2)) {
-		this->ply1->set_id(-1);
-		this->ply2->set_id(1);
+		this->ply1->set_id(1);
+		this->ply2->set_id(-1);
 		for (int i = 0; i < 8; ++i) {
 			std::vector<int> row;
 			for (int j = 0; j < 8; ++j) {
@@ -35,17 +35,48 @@ public:
 			}
 			board.push_back(row);
 		}
+		board[3][3] = -1;
+		board[3][4] = 1;
+		board[4][3] = 1;
+		board[4][4] = -1;
 
 	}
-	std::vector<Move> possible_moves() {
+	int opponent_id(int id) {
+		return id * -1;
+	}
+	bool find_player_move(int id, Move start, int i_delta, int j_delta) {
+		for (int start_i = start.i, start_j=start.j;
+			start_i >= 0 && start_i < N && start_j >= 0 && start_j < N;
+			start_i += i_delta, start_j += j_delta) {
+			if (board[start_i][start_j] == id) {
+				return true;
+			}
+		}
+		return false;
+	}
+	std::vector<Move> possible_moves(int id) {
 		std::vector<Move> moves;
 		for (int i = 0; i < N; i++) {
 			for (int j = 0; j < N; j++) {
 				if (board[i][j] == 0) {
-					moves.push_back(Move{i, j});
+					bool legal = false;
+					//TODO: Need to refactor this ugly if/else, might just replace by one statement
+					if (i < N - 1 && board[i+1][j] == opponent_id(id) && find_player_move(id, Move{i+1, j}, 1, 0)) {
+						legal = true;
+					} else if (i >= 1 && board[i-1][j] == opponent_id(id) && find_player_move(id, Move{i-1,j}, -1, 0)) {
+						legal = true;
+					} else if (j < N - 1 && board[i][j+1] == opponent_id(id) && find_player_move(id, Move{i,j+1}, 0, 1)) {
+						legal = true;
+					} else if (j >= 1 && board[i][j-1] == opponent_id(id) && find_player_move(id, Move{i,j-1}, 0, -1)) {
+						legal = true;
+					}
+					if (legal) {
+						moves.push_back(Move{i, j});
+					}
 				}
 			}
 		}
+
 		return moves;
 	}
 	void display_board() {
@@ -61,7 +92,7 @@ public:
 				std::cout << "|";
 				if (elem == 0) {
 					std::cout << " ";
-				}else if (elem == -1) {
+				}else if (elem == 1) {
 					std::cout << "X";
 				}else {
 					std::cout << "O";
@@ -76,14 +107,14 @@ public:
 	void run() {
 		display_board();
 		while (true) {
-			auto ply1_move = ply1->next_move(possible_moves());
+			auto ply1_move = ply1->next_move(possible_moves(ply1->id));
 			if (!is_move_legal(ply1_move)) {
 				continue;
 			}
 			update_board(ply1_move, ply1->id);
 			//ply2.acknowledge(ply1_move)
 			display_board();
-			auto ply2_move = ply2->next_move(possible_moves());
+			auto ply2_move = ply2->next_move(possible_moves(ply2->id));
 			if (!is_move_legal(ply2_move)) {
 				continue;
 			}
@@ -93,8 +124,8 @@ public:
 		}
 	}
 private:
-	void update_board(Move move, int ply) {
-		board[move.i][move.j] = ply;
+	void update_board(Move move, int ply_id) {
+		board[move.i][move.j] = ply_id;
 	}
 
 };
