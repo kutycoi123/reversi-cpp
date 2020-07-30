@@ -6,6 +6,7 @@
 #include <utility>
 #include <math.h>
 #define INF 2147483647.0
+
 struct Move{
 	int i, j;
 };	
@@ -45,71 +46,6 @@ public:
 	Human(const std::string& name) : Player(name) {}
 	~Human(){}
 };
-struct TreeNode {
-	Move move;
-	const TreeNode* parent = NULL;
-	int board[8][8];
-	int nVisited = 0;
-	int nWins = 0;
-	std::vector<std::unique_ptr<TreeNode>> children;
-	TreeNode() {}
-	TreeNode(int** b, const TreeNode* par) {
-		for (int i = 0; i < 8; ++i) {
-			for (int j = 0; j < 8; ++j) {
-				board[i][j] = b[i][j];
-			}
-		}
-		parent = par;
-	}
-	TreeNode* best_child() {
-		auto heu = [](const TreeNode& node){
-			if (node.nVisited == 0 || node.parent->nVisited == 0) {
-				return INF;
-			}
-			return (double)node.nWins / node.nVisited + 1.4*(sqrt(log((double)node.parent->nVisited)) / node.nVisited);
-		};
-		double max = -1;
-		TreeNode* best_child = NULL;
-		for (auto& child : children) {
-			double heu_score = heu(*child);
-			if (heu_score > max) {
-				max = heu_score;
-				best_child = child.get();
-			}
-		}
-		return best_child;
-	}
-};
-
-
-
-class AI : public Player {
-public:
-	Move next_move(const std::vector<Move>& possible_moves) const override {
-		return Move{0,0};
-	}
-	AI() : Player() {}
-	AI(const std::string& name) : Player(name) {}
-
-	TreeNode* select(TreeNode* node) {
-		if (node != NULL && node->children.size() != 0) {
-			return select(node->best_child());
-		}
-		return node;
-	}
-	Move monte_carlo_tree_search(int** board, int N = 1000) {
-
-		TreeNode root(board, NULL);
-		for (int i = 0; i < N; ++i) {
-			//auto leaf = select(root);
-		}
-		return Move{0,0};
-	}
-	~AI(){}
-};
-
-
-
 
 class Reversi {
 public:
@@ -278,7 +214,89 @@ private:
 	}
 };
 
+std::vector<Move> possible_moves(int board[8][8]) {
+	std::vector<Move> moves;
+	return moves;
+}
+bool terminal_test(int board[8][8]) {
+	return true;
+}
 
+struct TreeNode {
+	Move move;
+	const TreeNode* parent = NULL;
+	int board[8][8];
+	int nVisited = 0;
+	int nWins = 0;
+	int player_id; //player about to take move
+	std::vector<std::unique_ptr<TreeNode>> children;
+	TreeNode() {}
+	TreeNode(int player_id, int b[8][8], const TreeNode* par) : parent(par), player_id(player_id) {
+		for (int i = 0; i < 8; ++i) {
+			for (int j = 0; j < 8; ++j) {
+				board[i][j] = b[i][j];
+			}
+		}
+	}
+	TreeNode* best_child() {
+		auto heu = [](const TreeNode& node){
+			if (node.nVisited == 0 || node.parent->nVisited == 0) {
+				return INF;
+			}
+			return (double)node.nWins / node.nVisited + 1.4*(sqrt(log((double)node.parent->nVisited)) / node.nVisited);
+		};
+		double max = -1;
+		TreeNode* best_child = NULL;
+		for (auto& child : children) {
+			double heu_score = heu(*child);
+			if (heu_score > max) {
+				max = heu_score;
+				best_child = child.get();
+			}
+		}
+		return best_child;
+	}
+
+};
+
+
+
+class AI : public Player {
+public:
+	Move next_move(const std::vector<Move>& possible_moves) const override {
+		return Move{0,0};
+	}
+	AI() : Player() {}
+	AI(const std::string& name) : Player(name) {}
+
+	TreeNode* select(TreeNode* node) {
+		if (node != NULL && node->children.size() != 0) {
+			return select(node->best_child());
+		}
+		return node;
+	}
+	TreeNode* expand(TreeNode* node) {
+		if (node->children.size() == 0 && !terminal_test(node->board)) {
+			auto moves = possible_moves(node->board);
+			for (auto& move : moves) {
+				auto child = std::make_unique<TreeNode>(node->player_id*-1, node->board, node);
+				child->board[move.i][move.j] = node->player_id;
+				node->children.push_back(std::move(child));
+			}
+		}
+		return select(node);
+	}
+	Move monte_carlo_tree_search(int board[8][8], int N = 1000) {
+
+		TreeNode root(id, board, NULL);
+		for (int i = 0; i < N; ++i) {
+			auto leaf = select(&root);
+			auto child = expand(leaf);
+		}
+		return Move{0,0};
+	}
+	~AI(){}
+};
 
 int main(int argc, char**argv) {
 	Reversi reversi {std::unique_ptr<Player>(new Human("Human 1")), std::unique_ptr<Player>(new Human("Human 2"))};
