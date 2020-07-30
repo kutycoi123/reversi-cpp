@@ -2,27 +2,57 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
+#include <string>
 
 struct Move{
 	int i, j;
 };	
+
 inline bool operator==(const Move& lhs, const Move& rhs) {
 	return lhs.i == rhs.i && lhs.i == rhs.i;
 }
 inline bool operator!=(const Move& lhs, const Move& rhs) {
 	return !(lhs == rhs);
 }
+
 class Player {
 public:
 	int id;
+	int score;
+	std::string name;
 	virtual Move next_move(const std::vector<Move>&) const = 0;
 	void set_id(int id) {
 		this->id = id;
 	}
-	Player(){}
+	Player() : score(0) {}
+	Player(const std::string& name) : score(0), name(name){}
 	~Player(){}
 };
+class AI : public Player {
+public:
+	Move next_move(const std::vector<Move>& possible_moves) const override {
+		return Move{0,0};
+	}
+	AI() : Player() {}
+	AI(const std::string& name) : Player(name) {}
+	~AI(){}
+};
 
+class Human : public Player {
+public:
+	Move next_move(const std::vector<Move>& possible_moves) const override {
+		int i, j;
+		std::cout << "Choose row: ";
+		std::cin >> i;
+		std::cout << "Choose column: ";
+		std::cin >> j;
+		return Move{i,j};
+	}
+
+	Human() : Player() {}
+	Human(const std::string& name) : Player(name) {}
+	~Human(){}
+};
 class Reversi {
 public:
 	int N = 8;
@@ -45,9 +75,11 @@ public:
 		board[3][4] = 1;
 		board[4][3] = 1;
 		board[4][4] = -1;
+		this->ply1->score = 2;
+		this->ply2->score = 2;
 
 	}
-	int opponent_id(int id) {
+	int get_opponent_id(int id) {
 		return id * -1;
 	}
 	bool find_player_move(int id, Move start, int i_delta, int j_delta) {
@@ -62,17 +94,18 @@ public:
 	}
 	std::vector<Move> possible_moves(int id) {
 		std::vector<Move> moves;
+		auto opponent_id = get_opponent_id(id);
 		for (int i = 0; i < N; i++) {
 			for (int j = 0; j < N; j++) {
 				if (board[i][j] == 0) {
-					bool legal = (i < N - 1 && board[i+1][j] == opponent_id(id) && find_player_move(id, Move{i+1, j}, 1, 0)) || 
-								 (i >= 1 && board[i-1][j] == opponent_id(id) && find_player_move(id, Move{i-1,j}, -1, 0)) || 
-								 (j < N - 1 && board[i][j+1] == opponent_id(id) && find_player_move(id, Move{i,j+1}, 0, 1)) || 
-								 (j >= 1 && board[i][j-1] == opponent_id(id) && find_player_move(id, Move{i,j-1}, 0, -1)) || 
-								 (i < N - 1 && j < N - 1 && board[i+1][j+1] == opponent_id(id) && find_player_move(id, Move{i+1, j+1}, 1, 1)) ||
-								 (i >= 1 && j >= 1 && board[i-1][j-1] == opponent_id(id) && find_player_move(id, Move{i-1, j-1}, -1, -1)) || 
-								 (i >= 1 && j < N - 1 && board[i-1][j+1] == opponent_id(id) && find_player_move(id, Move{i-1, j+1}, -1, 1)) || 
-								 (i < N - 1 && j >= 1 && board[i+1][j-1] == opponent_id(id) && find_player_move(id, Move{i+1, j-1}, 1, -1));
+					bool legal = (i < N - 1 && board[i+1][j] == opponent_id && find_player_move(id, Move{i+1, j}, 1, 0)) || 
+								 (i >= 1 && board[i-1][j] == opponent_id && find_player_move(id, Move{i-1,j}, -1, 0)) || 
+								 (j < N - 1 && board[i][j+1] == opponent_id && find_player_move(id, Move{i,j+1}, 0, 1)) || 
+								 (j >= 1 && board[i][j-1] == opponent_id && find_player_move(id, Move{i,j-1}, 0, -1)) || 
+								 (i < N - 1 && j < N - 1 && board[i+1][j+1] == opponent_id && find_player_move(id, Move{i+1, j+1}, 1, 1)) ||
+								 (i >= 1 && j >= 1 && board[i-1][j-1] == opponent_id && find_player_move(id, Move{i-1, j-1}, -1, -1)) || 
+								 (i >= 1 && j < N - 1 && board[i-1][j+1] == opponent_id && find_player_move(id, Move{i-1, j+1}, -1, 1)) || 
+								 (i < N - 1 && j >= 1 && board[i+1][j-1] == opponent_id && find_player_move(id, Move{i+1, j-1}, 1, -1));
 					if (legal) {
 						moves.push_back(Move{i, j});
 					}
@@ -103,22 +136,22 @@ public:
 			}
 			std::cout << "|\n";
 		}
+		std::cout << ply1->name << ": " << ply1->score << "\n";
+		std::cout << ply2->name << ": " << ply2->score << "\n";
 	}
 	Move get_player_move(const Player* ply, std::vector<Move> moves) const {
 		Move move;
 		while (true) {
 			move = ply->next_move(moves);
 			if (std::find(moves.begin(), moves.end(), move) == moves.end()) {
-				std::cout << "Invalid move. Please choose another move";
+				std::cout << "Invalid move. Please choose another move\n";
 				continue;
 			}
 			return move;
 		}
 
 	}
-	bool is_move_legal(Move move) {
-		return true;
-	}
+
 	void run() {
 		display_board();
 		while (true) {
@@ -127,48 +160,136 @@ public:
 				break;
 			}
 			auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
-			update_board(ply1_move, ply1->id);
+			update(ply1_move, ply1.get());
 			//ply2.acknowledge(ply1_move)
 			display_board();
 			auto possible_moves_ply2 = possible_moves(ply2->id);
+			if (possible_moves_ply2.size() == 0) {
+				break;
+			}
 			auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
-			update_board(ply2_move, ply2->id);
+			update(ply2_move, ply2.get());
 			display_board();
 			// ply1.acknowledge(ply1_move)
 		}
+		auto ply1_score = ply1->score, ply2_score = ply2->score;
+		if (ply1_score > ply2_score) {
+			std::cout << "Player " << ply1->name << " has won with " << ply1_score << " score \n";
+		} else if (ply1_score < ply2_score) {
+			std::cout << "Player " << ply2->name << " has won with " << ply2_score << " score \n";
+		} else {
+			std::cout << "Draw!!!";
+		}
 	}
 private:
-	void update_board(Move move, int ply_id) {
-		board[move.i][move.j] = ply_id;
+	void update(Move move, Player* ply) {
+		int id = ply->id;
+		board[move.i][move.j] = id;
+		ply->score += 1;
+		auto opponent_id = get_opponent_id(id);
+		int score = 0;
+		//TODO: refactor this ugly code
+		if (move.i + 1 < N  && find_player_move(id, Move{move.i+1,move.j}, 1, 0)) {
+			for (int i = move.i,j=move.j;i+1<N;i++) {
+				if (board[i+1][j] == opponent_id) {
+					board[i+1][j] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.i >= 1 && find_player_move(id, Move{move.i-1, move.j}, -1, 0)) {
+			for (int i = move.i,j=move.j;i>=1;i--) {
+				if (board[i-1][j] == opponent_id) {
+					board[i-1][j] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.j + 1 < N && find_player_move(id, Move{move.i, move.j+1}, 0, 1)) {
+			for (int i=move.i,j = move.j;j+1<N;j++) {
+				if (board[i][j+1] == opponent_id) {
+					board[i][j+1] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.j >= 1 && find_player_move(id, Move{move.i, move.j - 1}, 0, -1)) {
+			for (int i=move.i,j = move.j;j>=1;j--) {
+				if (board[i][j-1] == opponent_id) {
+					board[i][j-1] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.i + 1 < N && move.j + 1 < N && find_player_move(id, Move{move.i+1, move.j+1}, 1, 1)) {
+			for (int i = move.i,j = move.j;
+				i + 1 < N && j + 1 < N;
+				i++, j++) {
+				if (board[i+1][j+1] == opponent_id) {
+					board[i+1][j+1] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.i >= 1 && move.j >= 1 && find_player_move(id, Move{move.i-1, move.j-1}, -1, -1)) {
+			for (int i = move.i, j=move.j;
+				i >= 1 && j >= 1;
+				i--,j--) {
+				if (board[i-1][j-1] == opponent_id) {
+					board[i-1][j-1] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.i + 1 < N && move.j >= 1 && find_player_move(id, Move{move.i+1, move.j-1}, 1, -1)) {
+			for (int i = move.i,j=move.j;
+				i + 1 < N && j >= 1;
+				i++, j--) {
+				if (board[i+1][j-1] == opponent_id) {
+					board[i+1][j-1] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		if (move.i >= 1 && move.j + 1 < N && find_player_move(id, Move{move.i-1, move.j+1}, -1, 1)) {
+			for (int i = move.i, j=move.j;
+				i >= 1 && j + 1 < N;
+				i--,j++) {
+				if (board[i-1][j+1] == opponent_id) {
+					board[i-1][j+1] = id;
+					score++;
+				} else {
+					break;
+				}
+			}
+		}
+		ply->score += score;
+		if (id == ply1->id) {
+			ply2->score -= score;
+		} else {
+			ply1->score -= score;
+		}
 	}
 };
 
-class AI : public Player {
-public:
-	Move next_move(const std::vector<Move>& possible_moves) const override {
-		return Move{0,0};
-	}
-	AI(){}
-	~AI(){}
-};
 
-class Human : public Player {
-public:
-	Move next_move(const std::vector<Move>& possible_moves) const override {
-		int i, j;
-		std::cout << "Choose row: ";
-		std::cin >> i;
-		std::cout << "Choose column: ";
-		std::cin >> j;
-		return Move{i,j};
-	}
-
-	Human(){}
-	~Human(){}
-};
 
 int main(int argc, char**argv) {
-	Reversi reversi {std::unique_ptr<Player>(new Human()), std::unique_ptr<Player>(new Human())};
+	Reversi reversi {std::unique_ptr<Player>(new Human("Human 1")), std::unique_ptr<Player>(new Human("Human 2"))};
 	reversi.run();
 	return 0; 
 }
