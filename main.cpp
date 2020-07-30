@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-
+#include <utility>
 struct Move{
 	int i, j;
 };	
@@ -188,92 +188,28 @@ private:
 		ply->score += 1;
 		auto opponent_id = get_opponent_id(id);
 		int score = 0;
+		std::vector<std::pair<int,int>> deltas;
+		deltas.push_back(std::make_pair(0,1));
+		deltas.push_back(std::make_pair(0,-1));
+		deltas.push_back(std::make_pair(1,0));
+		deltas.push_back(std::make_pair(-1,0));
+		deltas.push_back(std::make_pair(1,-1));
+		deltas.push_back(std::make_pair(-1,1));
+		deltas.push_back(std::make_pair(-1,-1));
+		deltas.push_back(std::make_pair(1,1));
 		//TODO: refactor this ugly code
-		if (move.i + 1 < N  && find_player_move(id, Move{move.i+1,move.j}, 1, 0)) {
-			for (int i = move.i,j=move.j;i+1<N;i++) {
-				if (board[i+1][j] == opponent_id) {
-					board[i+1][j] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.i >= 1 && find_player_move(id, Move{move.i-1, move.j}, -1, 0)) {
-			for (int i = move.i,j=move.j;i>=1;i--) {
-				if (board[i-1][j] == opponent_id) {
-					board[i-1][j] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.j + 1 < N && find_player_move(id, Move{move.i, move.j+1}, 0, 1)) {
-			for (int i=move.i,j = move.j;j+1<N;j++) {
-				if (board[i][j+1] == opponent_id) {
-					board[i][j+1] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.j >= 1 && find_player_move(id, Move{move.i, move.j - 1}, 0, -1)) {
-			for (int i=move.i,j = move.j;j>=1;j--) {
-				if (board[i][j-1] == opponent_id) {
-					board[i][j-1] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.i + 1 < N && move.j + 1 < N && find_player_move(id, Move{move.i+1, move.j+1}, 1, 1)) {
-			for (int i = move.i,j = move.j;
-				i + 1 < N && j + 1 < N;
-				i++, j++) {
-				if (board[i+1][j+1] == opponent_id) {
-					board[i+1][j+1] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.i >= 1 && move.j >= 1 && find_player_move(id, Move{move.i-1, move.j-1}, -1, -1)) {
-			for (int i = move.i, j=move.j;
-				i >= 1 && j >= 1;
-				i--,j--) {
-				if (board[i-1][j-1] == opponent_id) {
-					board[i-1][j-1] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.i + 1 < N && move.j >= 1 && find_player_move(id, Move{move.i+1, move.j-1}, 1, -1)) {
-			for (int i = move.i,j=move.j;
-				i + 1 < N && j >= 1;
-				i++, j--) {
-				if (board[i+1][j-1] == opponent_id) {
-					board[i+1][j-1] = id;
-					score++;
-				} else {
-					break;
-				}
-			}
-		}
-		if (move.i >= 1 && move.j + 1 < N && find_player_move(id, Move{move.i-1, move.j+1}, -1, 1)) {
-			for (int i = move.i, j=move.j;
-				i >= 1 && j + 1 < N;
-				i--,j++) {
-				if (board[i-1][j+1] == opponent_id) {
-					board[i-1][j+1] = id;
-					score++;
-				} else {
-					break;
+		for (const auto& delta : deltas) {
+			if (move.i <= N - 2 && move.i >= 1 && move.j <= N - 2 && move.j >= 1 && 
+				find_player_move(id, Move{move.i+delta.first, move.j+delta.second}, delta.first, delta.second)) {
+				for (int i = move.i, j = move.j;
+					i <= N - 2 && i >= 1 && j <= N - 2 && j >= 1;
+					i += delta.first, j += delta.second) {
+					if (board[i+delta.first][j+delta.second] == opponent_id) {
+						board[i+delta.first][j+delta.second] = id;
+						score++;
+					}else {
+						break;
+					}
 				}
 			}
 		}
