@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <math.h>
+#define INF 2147483647.0
 struct Move{
 	int i, j;
 };	
@@ -14,7 +16,6 @@ inline bool operator==(const Move& lhs, const Move& rhs) {
 inline bool operator!=(const Move& lhs, const Move& rhs) {
 	return !(lhs == rhs);
 }
-
 class Player {
 public:
 	int id;
@@ -27,15 +28,6 @@ public:
 	Player() : score(0) {}
 	Player(const std::string& name) : score(0), name(name){}
 	~Player(){}
-};
-class AI : public Player {
-public:
-	Move next_move(const std::vector<Move>& possible_moves) const override {
-		return Move{0,0};
-	}
-	AI() : Player() {}
-	AI(const std::string& name) : Player(name) {}
-	~AI(){}
 };
 
 class Human : public Player {
@@ -53,11 +45,77 @@ public:
 	Human(const std::string& name) : Player(name) {}
 	~Human(){}
 };
+struct TreeNode {
+	Move move;
+	const TreeNode* parent = NULL;
+	int board[8][8];
+	int nVisited = 0;
+	int nWins = 0;
+	std::vector<std::unique_ptr<TreeNode>> children;
+	TreeNode() {}
+	TreeNode(int** b, const TreeNode* par) {
+		for (int i = 0; i < 8; ++i) {
+			for (int j = 0; j < 8; ++j) {
+				board[i][j] = b[i][j];
+			}
+		}
+		parent = par;
+	}
+	TreeNode* best_child() {
+		auto heu = [](const TreeNode& node){
+			if (node.nVisited == 0 || node.parent->nVisited == 0) {
+				return INF;
+			}
+			return (double)node.nWins / node.nVisited + 1.4*(sqrt(log((double)node.parent->nVisited)) / node.nVisited);
+		};
+		double max = -1;
+		TreeNode* best_child = NULL;
+		for (auto& child : children) {
+			double heu_score = heu(*child);
+			if (heu_score > max) {
+				max = heu_score;
+				best_child = child.get();
+			}
+		}
+		return best_child;
+	}
+};
+
+
+
+class AI : public Player {
+public:
+	Move next_move(const std::vector<Move>& possible_moves) const override {
+		return Move{0,0};
+	}
+	AI() : Player() {}
+	AI(const std::string& name) : Player(name) {}
+
+	TreeNode* select(TreeNode* node) {
+		if (node != NULL && node->children.size() != 0) {
+			return select(node->best_child());
+		}
+		return node;
+	}
+	Move monte_carlo_tree_search(int** board, int N = 1000) {
+
+		TreeNode root(board, NULL);
+		for (int i = 0; i < N; ++i) {
+			//auto leaf = select(root);
+		}
+		return Move{0,0};
+	}
+	~AI(){}
+};
+
+
+
+
 class Reversi {
 public:
 	int N = 8;
 	const Player* winner = NULL;
-	std::vector<std::vector<int>> board;
+	int board[8][8];
 	std::unique_ptr<Player> ply1;
 	std::unique_ptr<Player> ply2;
 	Reversi(std::unique_ptr<Player> ply1, std::unique_ptr<Player> ply2) :
@@ -65,11 +123,9 @@ public:
 		this->ply1->set_id(1);
 		this->ply2->set_id(-1);
 		for (int i = 0; i < 8; ++i) {
-			std::vector<int> row;
 			for (int j = 0; j < 8; ++j) {
-				row.push_back(0);
+				board[i][j] = 0;				
 			}
-			board.push_back(row);
 		}
 		board[3][3] = -1;
 		board[3][4] = 1;
@@ -122,9 +178,9 @@ public:
 		}
 		std::cout << "\n";
 		for (int i = 0; i < N; ++i) {
-			auto row = board[i];
 			std::cout << i;
-			for (auto& elem : row) {
+			for (int j = 0; j < N; ++j) {
+				auto elem = board[i][j];
 				std::cout << "|";
 				if (elem == 0) {
 					std::cout << " ";
