@@ -223,15 +223,15 @@ bool terminal_test(int board[8][8]) {
 }
 
 struct TreeNode {
-	Move move;
-	const TreeNode* parent = NULL;
 	int board[8][8];
 	int nVisited = 0;
 	int nWins = 0;
 	int player_id; //player about to take move
+	Move move;
+	const TreeNode* parent = NULL;	
 	std::vector<std::unique_ptr<TreeNode>> children;
 	TreeNode() {}
-	TreeNode(int player_id, int b[8][8], const TreeNode* par) : parent(par), player_id(player_id) {
+	TreeNode(int player_id, int b[8][8], const TreeNode* par) : player_id(player_id), parent(par) {
 		for (int i = 0; i < 8; ++i) {
 			for (int j = 0; j < 8; ++j) {
 				board[i][j] = b[i][j];
@@ -280,11 +280,33 @@ public:
 			auto moves = possible_moves(node->board);
 			for (auto& move : moves) {
 				auto child = std::make_unique<TreeNode>(node->player_id*-1, node->board, node);
+				child->move = Move{move.i, move.j};
 				child->board[move.i][move.j] = node->player_id;
 				node->children.push_back(std::move(child));
 			}
 		}
 		return select(node);
+	}
+	int playout(TreeNode* node) {
+		auto player = node->player_id;
+		int copied_board[8][8];
+		for (int i = 0; i < 8; ++i) {
+			for (int j = 0; j < 8; ++j) {
+				copied_board[i][j] = node->board[i][j];
+			}
+		}
+		while (!terminal_test(copied_board)) {
+			// Get all possible moves
+			auto moves = possible_moves(copied_board);
+			// Randomly choose a move among possible moves
+			// Update the copied_board
+		}
+		// If player wins, return -1
+
+		// If lost, return 1
+
+		// Otherwise, return 0
+		return 0;
 	}
 	Move monte_carlo_tree_search(int board[8][8], int N = 1000) {
 
