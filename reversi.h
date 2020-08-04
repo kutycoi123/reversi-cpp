@@ -6,8 +6,7 @@
 #include "reversi_utility.h"
 #include "mcts.h"
 
-class Player {
-public:
+struct Player {
 	int id;
 	int score;
 	std::string name;
@@ -20,8 +19,7 @@ public:
 	~Player(){}
 };
 
-class Human : public Player {
-public:
+struct Human : public Player {
 	Move next_move(const std::vector<Move>& possible_moves) override {
 		int i, j;
 		std::cout << "Choose row: ";
@@ -40,8 +38,7 @@ public:
 
 
 
-class AI : public Player {
-public:
+struct AI : public Player {
 	int board[N][N];
 	void acknowledge(const std::vector<Move>& moves, int id) override {
 		for (auto& move : moves) {
@@ -62,8 +59,7 @@ public:
 	~AI(){}
 };
 
-class AI_noob : public AI {
-public:	
+struct AI_noob : public AI {
 	Move next_move(const std::vector<Move>& possible_moves) override {
 		int NTIMES = 4000;
 		TreeNode root(id, board, NULL);
@@ -82,7 +78,7 @@ public:
 		}
 		auto best_child = root.children[0].get();
 		for (auto& child : root.children) {
-			if (child->nWins / child->nLost > best_child->nWins / best_child->nLost) {
+			if (child->nWins / (child->nLost + 1) > best_child->nWins / (best_child->nLost + 1)) {
 				best_child = child.get();
 			}
 		}

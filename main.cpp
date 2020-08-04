@@ -10,6 +10,8 @@
 #include "reversi.h"
 
 void display_board(int board[N][N], const Player* ply1, const Player*ply2, const std::vector<Move>& moves = {}) {
+	std::cout << "Scores:  " << ply1->name << ": " << ply1->score  << "  "
+			  << ply2->name << ": " << ply2->score << "\n";
 	std::cout << " ";
 	for (int i = 0; i < N; ++i) {
 		std::cout << " " << i;
@@ -33,12 +35,10 @@ void display_board(int board[N][N], const Player* ply1, const Player*ply2, const
 		}
 		std::cout << "|\n";
 	}
-	std::cout << ply1->name << ": " << ply1->score << "\n";
-	std::cout << ply2->name << ": " << ply2->score << "\n";
+
 }
 
-class Reversi {
-public:
+struct Reversi {
 	int curr_player_id;
 	const Player* winner = NULL;
 	int board[N][N];
@@ -65,7 +65,6 @@ public:
 		Move move;
 		while (true) {
 			move = ply->next_move(moves);
-			std::cout << move.i << " " << move.j << "\n";
 			if (std::find(moves.begin(), moves.end(), move) == moves.end()) {
 				std::cout << "Invalid move. Please choose another move\n";
 				continue;
@@ -78,29 +77,37 @@ public:
 	void run() {
 
 		while (true) {
+			auto no_more_moves = false;
 			auto possible_moves_ply1 = possible_moves(board, ply1->id);
 			display_board(board, ply1.get(), ply2.get(), possible_moves_ply1);
-			if (possible_moves_ply1.size() == 0) {
-				break;
+			std::cout << "Turn for: " << ply1->name << "\n";
+			if (possible_moves_ply1.size() != 0) {
+				auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
+				auto new_updated_moves = update(board, ply1_move, ply1->id);
+				ply1->score += new_updated_moves.size();
+				ply2->score -= new_updated_moves.size() - 1;
+				ply2->acknowledge(new_updated_moves, ply1->id);
+				std::cout << ply1->name << " made a move: " << "(" << ply1_move.i << "," << ply1_move.j << ")\n";
+			} else {
+				no_more_moves = true;
+				std::cout << ply1->name << " has no valid moves to make\n";
 			}
-			auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
-			auto new_updated_moves = update(board, ply1_move, ply1->id);
-			ply1->score += new_updated_moves.size();
-			ply2->score -= new_updated_moves.size() - 1;
-			ply2->acknowledge(new_updated_moves, ply1->id);
-
-
+			std::cout << "\n";
 			auto possible_moves_ply2 = possible_moves(board, ply2->id);
 			display_board(board, ply1.get(), ply2.get(), possible_moves_ply2);
-			if (possible_moves_ply2.size() == 0) {
+			std::cout << "Turn for: " << ply2->name << "\n";						
+			if (possible_moves_ply2.size() != 0) {
+				auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
+				auto new_updated_moves = update(board, ply2_move, ply2->id);
+				ply2->score += new_updated_moves.size();
+				ply1->score -= new_updated_moves.size() - 1;
+				ply1->acknowledge(new_updated_moves, ply2->id);		
+				std::cout << ply2->name << " made a move: " << "(" << ply2_move.i << "," << ply2_move.j << ")\n";						
+			} else if (no_more_moves){
+				std::cout << "No more valid moves for both players. Game end!!!\n";
 				break;
 			}
-			auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
-			new_updated_moves = update(board, ply2_move, ply2->id);
-			ply2->score += new_updated_moves.size();
-			ply1->score -= new_updated_moves.size() - 1;
-			ply1->acknowledge(new_updated_moves, ply2->id);
-
+			std::cout << "\n";
 		}
 		auto ply1_score = ply1->score, ply2_score = ply2->score;
 		if (ply1_score > ply2_score) {
@@ -111,25 +118,19 @@ public:
 			std::cout << "Draw!!!";
 		}
 	}
-private:
-
 };
-
-
-
-
 
 int main(int argc, char**argv) {
 	srand (time(NULL));
 	//Reversi reversi {std::unique_ptr<Player>(new Human("Human 1")), std::unique_ptr<Player>(new Human("Human 2"))};
 	// Reversi reversi {std::unique_ptr<Player>(new Human("Human")),
 	// 				std::unique_ptr<Player>(new AI("AI"))};
-	// Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
-	// 			std::unique_ptr<Player>(new Human("Human"))};
+	Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
+				std::unique_ptr<Player>(new Human("Human"))};
 	// Reversi reversi {std::unique_ptr<Player>(new AI("AI 1")),
 	// 			std::unique_ptr<Player>(new AI("AI 2"))};
-	Reversi reversi {std::unique_ptr<Player>(new AI_noob("AI noob")),
-					std::unique_ptr<Player>(new AI("AI expert"))};	
+	// Reversi reversi {std::unique_ptr<Player>(new AI_noob("AI noob")),
+	// 				std::unique_ptr<Player>(new AI("AI expert"))};	
 	reversi.run();
 
 	return 0; 

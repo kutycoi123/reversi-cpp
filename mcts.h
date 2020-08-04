@@ -120,7 +120,6 @@ static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 5000) 
 
 	auto best_child = root.children[0].get();
 	for (auto& child : root.children) {
-		std::cout << child->move.i << " " << child->move.j << "\n";
 		if (child->nVisited > best_child->nVisited) {
 			best_child = child.get();
 		}
