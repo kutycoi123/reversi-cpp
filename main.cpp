@@ -12,31 +12,7 @@
 struct Move{
 	int i, j;
 };	
-void display_board(int board[N][N], const std::vector<Move>& moves = {}) {
-	std::cout << " ";
-	for (int i = 0; i < N; ++i) {
-		std::cout << " " << i;
-	}
-	std::cout << "\n";
-	for (int i = 0; i < N; ++i) {
-		std::cout << i;
-		for (int j = 0; j < N; ++j) {
-			auto elem = board[i][j];
-			std::cout << "|";
-			Move m{i, j};
-			if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
-				std::cout << "#";
-			}else if (elem == 0) {
-				std::cout << " ";
-			}else if (elem == 1) {
-				std::cout << "X";
-			}else {
-				std::cout << "O";
-			}
-		}
-		std::cout << "|\n";
-	}
-}
+
 inline bool operator==(const Move& lhs, const Move& rhs) {
 	return lhs.i == rhs.i && lhs.j == rhs.j;
 }
@@ -75,8 +51,121 @@ public:
 	Human(const std::string& name) : Player(name) {}
 	~Human(){}
 };
+
 int get_opponent_id(int id) {
 	return id * -1;
+}
+void display_board(int board[N][N], const Player* ply1, const Player*ply2, const std::vector<Move>& moves = {}) {
+	std::cout << " ";
+	for (int i = 0; i < N; ++i) {
+		std::cout << " " << i;
+	}
+	std::cout << "\n";
+	for (int i = 0; i < N; ++i) {
+		std::cout << i;
+		for (int j = 0; j < N; ++j) {
+			auto elem = board[i][j];
+			std::cout << "|";
+			Move m{i, j};
+			if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
+				std::cout << "#";
+			}else if (elem == 0) {
+				std::cout << " ";
+			}else if (elem == ply1->id) {
+				std::cout << "X";
+			}else {
+				std::cout << "O";
+			}
+		}
+		std::cout << "|\n";
+	}
+	std::cout << ply1->name << ": " << ply1->score << "\n";
+	std::cout << ply2->name << ": " << ply2->score << "\n";
+}
+bool find_player_move(int board[N][N], int id, Move start, int i_delta, int j_delta) {
+	for (int start_i = start.i, start_j=start.j;
+		start_i >= 0 && start_i < N && start_j >= 0 && start_j < N;
+		start_i += i_delta, start_j += j_delta) {
+		if (board[start_i][start_j] == 0) {
+			return false;
+		}
+		else if (board[start_i][start_j] == id) {
+			return true;
+		}
+	}
+	return false;
+}
+std::vector<Move> possible_moves(int board[N][N], int id) {
+	std::vector<Move> moves;
+	auto opponent_id = get_opponent_id(id);
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			if (board[i][j] == 0) {
+				bool legal = (i < N - 1 && board[i+1][j] == opponent_id && find_player_move(board, id, Move{i+1, j}, 1, 0)) || 
+							 (i >= 1 && board[i-1][j] == opponent_id && find_player_move(board, id, Move{i-1,j}, -1, 0)) || 
+							 (j < N - 1 && board[i][j+1] == opponent_id && find_player_move(board, id, Move{i,j+1}, 0, 1)) || 
+							 (j >= 1 && board[i][j-1] == opponent_id && find_player_move(board, id, Move{i,j-1}, 0, -1)) || 
+							 (i < N - 1 && j < N - 1 && board[i+1][j+1] == opponent_id && find_player_move(board, id, Move{i+1, j+1}, 1, 1)) ||
+							 (i >= 1 && j >= 1 && board[i-1][j-1] == opponent_id && find_player_move(board, id, Move{i-1, j-1}, -1, -1)) || 
+							 (i >= 1 && j < N - 1 && board[i-1][j+1] == opponent_id && find_player_move(board, id, Move{i-1, j+1}, -1, 1)) || 
+							 (i < N - 1 && j >= 1 && board[i+1][j-1] == opponent_id && find_player_move(board, id, Move{i+1, j-1}, 1, -1));
+				if (legal) {
+					moves.push_back(Move{i, j});
+				}
+			}
+		}
+	}
+
+	return moves;
+}
+int get_winner(int board[N][N]) {
+	int ply1_count = 0, ply2_count = 0;
+	for (int i = 0; i < N; ++i) {
+		for (int j = 0; j < N; ++j) {
+			if (board[i][j] == -1) 
+				ply1_count++;
+			else if (board[i][j] == 1) 
+				ply2_count++;
+		}
+	}
+	if (ply1_count > ply2_count) 
+		return -1;
+	else if (ply1_count < ply2_count)
+		return 1;
+	else
+		return 0;
+}
+std::vector<Move> update(int board[N][N], Move move, int id) {
+	std::vector<Move> new_moves;
+	new_moves.push_back(move);
+	board[move.i][move.j] = id;
+	auto opponent_id = get_opponent_id(id);
+	std::vector<std::pair<int,int>> deltas;
+	deltas.push_back(std::make_pair(0,1));
+	deltas.push_back(std::make_pair(0,-1));
+	deltas.push_back(std::make_pair(1,0));
+	deltas.push_back(std::make_pair(-1,0));
+	deltas.push_back(std::make_pair(1,-1));
+	deltas.push_back(std::make_pair(-1,1));
+	deltas.push_back(std::make_pair(-1,-1));
+	deltas.push_back(std::make_pair(1,1));
+	//TODO: refactor this ugly code
+	for (const auto& delta : deltas) {
+		if (move.i < N && move.i >= 0 && move.j < N && move.j >= 0 && 
+			find_player_move(board, id, Move{move.i+delta.first, move.j+delta.second}, delta.first, delta.second)) {
+			for (int i = move.i, j = move.j;
+				i + delta.first < N && i + delta.first >= 0 && j + delta.second < N && j + delta.second >= 0;
+				i += delta.first, j += delta.second) {
+				if (board[i+delta.first][j+delta.second] == opponent_id) {
+					board[i+delta.first][j+delta.second] = id;
+					new_moves.push_back(Move{i+delta.first, j+delta.second});
+				}else {
+					break;
+				}
+			}
+		}
+	}
+	return new_moves;
 }
 class Reversi {
 public:
@@ -147,33 +236,34 @@ public:
 
 		return moves;
 	}
-	void display_board(const std::vector<Move>& moves = {}) {
-		std::cout << " ";
-		for (int i = 0; i < N; ++i) {
-			std::cout << " " << i;
-		}
-		std::cout << "\n";
-		for (int i = 0; i < N; ++i) {
-			std::cout << i;
-			for (int j = 0; j < N; ++j) {
-				auto elem = board[i][j];
-				std::cout << "|";
-				Move m{i, j};
-				if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
-					std::cout << "#";
-				}else if (elem == 0) {
-					std::cout << " ";
-				}else if (elem == 1) {
-					std::cout << "X";
-				}else {
-					std::cout << "O";
-				}
-			}
-			std::cout << "|\n";
-		}
-		std::cout << ply1->name << ": " << ply1->score << "\n";
-		std::cout << ply2->name << ": " << ply2->score << "\n";
-	}
+	// void display_board(const std::vector<Move>& moves = {}) {
+	// 	std::cout << " ";
+	// 	for (int i = 0; i < N; ++i) {
+	// 		std::cout << " " << i;
+	// 	}
+	// 	std::cout << "\n";
+	// 	for (int i = 0; i < N; ++i) {
+	// 		std::cout << i;
+	// 		for (int j = 0; j < N; ++j) {
+	// 			auto elem = board[i][j];
+	// 			std::cout << "|";
+	// 			Move m{i, j};
+	// 			if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
+	// 				std::cout << "#";
+	// 			}else if (elem == 0) {
+	// 				std::cout << " ";
+	// 			}else if (elem == 1) {
+	// 				std::cout << "X";
+	// 			}else {
+	// 				std::cout << "O";
+	// 			}
+	// 		}
+	// 		std::cout << "|\n";
+	// 	}
+	// 	std::cout << ply1->name << ": " << ply1->score << "\n";
+	// 	std::cout << ply2->name << ": " << ply2->score << "\n";
+	// }
+
 	Move get_player_move(Player* ply, std::vector<Move> moves) const {
 		Move move;
 		while (true) {
@@ -192,23 +282,29 @@ public:
 
 		while (true) {
 			auto possible_moves_ply1 = possible_moves(ply1->id);
-			display_board(possible_moves_ply1);
+			display_board(board, ply1.get(), ply2.get(), possible_moves_ply1);
 			if (possible_moves_ply1.size() == 0) {
 				break;
 			}
 			auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
-			update(ply1_move, ply1.get());
-			//ply2->acknowledge(ply1_move, ply1->id);
+			//update(ply1_move, ply1.get());
+			auto new_updated_moves = update(board, ply1_move, ply1->id);
+			ply1->score += new_updated_moves.size();
+			ply2->score -= new_updated_moves.size() - 1;
+
 
 			auto possible_moves_ply2 = possible_moves(ply2->id);
-			display_board(possible_moves_ply2);
+			display_board(board, ply1.get(), ply2.get(), possible_moves_ply2);
 			if (possible_moves_ply2.size() == 0) {
 				break;
 			}
 			auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
-			update(ply2_move, ply2.get());
-			// display_board();
-			//ply1->acknowledge(ply2_move, ply2->id);
+			//update(ply2_move, ply2.get());
+			new_updated_moves = update(board, ply2_move, ply2->id);
+			ply2->score += new_updated_moves.size();
+			ply1->score -= new_updated_moves.size() - 1;
+
+
 		}
 		auto ply1_score = ply1->score, ply2_score = ply2->score;
 		if (ply1_score > ply2_score) {
@@ -220,52 +316,52 @@ public:
 		}
 	}
 private:
-	void update(Move move, Player* ply) {
-		int id = ply->id;
-		std::vector<Move> new_moves;
-		board[move.i][move.j] = id;
-		new_moves.push_back(move);
-		ply->score += 1;
-		auto opponent_id = get_opponent_id(id);
-		int score = 0;
-		std::vector<std::pair<int,int>> deltas;
-		deltas.push_back(std::make_pair(0,1));
-		deltas.push_back(std::make_pair(0,-1));
-		deltas.push_back(std::make_pair(1,0));
-		deltas.push_back(std::make_pair(-1,0));
-		deltas.push_back(std::make_pair(1,-1));
-		deltas.push_back(std::make_pair(-1,1));
-		deltas.push_back(std::make_pair(-1,-1));
-		deltas.push_back(std::make_pair(1,1));
-		//TODO: refactor this ugly code
-		for (const auto& delta : deltas) {
-			if (move.i < N && move.i >= 0 && move.j < N && move.j >= 0 && 
-				find_player_move(id, Move{move.i+delta.first, move.j+delta.second}, delta.first, delta.second)) {
-				// if (move.i + delta.first >= 0 && move.i+delta.first < N && move.j + delta.second >= 0
-				// 	&& move.j + delta.second < N
-				// 	&& )
-				for (int i = move.i, j = move.j;
-					i + delta.first < N && i + delta.first >= 0 && j + delta.second < N && j + delta.second >= 0;
-					i += delta.first, j += delta.second) {
-					if (board[i+delta.first][j+delta.second] == opponent_id) {
-						board[i+delta.first][j+delta.second] = id;
-						new_moves.push_back(Move{i+delta.first, j+delta.second});
-						score++;
-					}else {
-						break;
-					}
-				}
-			}
-		}
-		ply->score += score;
-		if (id == ply1->id) {
-			ply2->score -= score;
-			ply2->acknowledge(new_moves, id);
-		} else {
-			ply1->score -= score;
-			ply1->acknowledge(new_moves, id);
-		}
-	}
+	// void update(Move move, Player* ply) {
+	// 	int id = ply->id;
+	// 	std::vector<Move> new_moves;
+	// 	board[move.i][move.j] = id;
+	// 	new_moves.push_back(move);
+	// 	ply->score += 1;
+	// 	auto opponent_id = get_opponent_id(id);
+	// 	int score = 0;
+	// 	std::vector<std::pair<int,int>> deltas;
+	// 	deltas.push_back(std::make_pair(0,1));
+	// 	deltas.push_back(std::make_pair(0,-1));
+	// 	deltas.push_back(std::make_pair(1,0));
+	// 	deltas.push_back(std::make_pair(-1,0));
+	// 	deltas.push_back(std::make_pair(1,-1));
+	// 	deltas.push_back(std::make_pair(-1,1));
+	// 	deltas.push_back(std::make_pair(-1,-1));
+	// 	deltas.push_back(std::make_pair(1,1));
+	// 	//TODO: refactor this ugly code
+	// 	for (const auto& delta : deltas) {
+	// 		if (move.i < N && move.i >= 0 && move.j < N && move.j >= 0 && 
+	// 			find_player_move(id, Move{move.i+delta.first, move.j+delta.second}, delta.first, delta.second)) {
+	// 			// if (move.i + delta.first >= 0 && move.i+delta.first < N && move.j + delta.second >= 0
+	// 			// 	&& move.j + delta.second < N
+	// 			// 	&& )
+	// 			for (int i = move.i, j = move.j;
+	// 				i + delta.first < N && i + delta.first >= 0 && j + delta.second < N && j + delta.second >= 0;
+	// 				i += delta.first, j += delta.second) {
+	// 				if (board[i+delta.first][j+delta.second] == opponent_id) {
+	// 					board[i+delta.first][j+delta.second] = id;
+	// 					new_moves.push_back(Move{i+delta.first, j+delta.second});
+	// 					score++;
+	// 				}else {
+	// 					break;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	ply->score += score;
+	// 	if (id == ply1->id) {
+	// 		ply2->score -= score;
+	// 		ply2->acknowledge(new_moves, id);
+	// 	} else {
+	// 		ply1->score -= score;
+	// 		ply1->acknowledge(new_moves, id);
+	// 	}
+	// }
 };
 
 
@@ -306,87 +402,7 @@ struct TreeNode {
 	}
 
 };
-bool find_player_move(int board[N][N], int id, Move start, int i_delta, int j_delta) {
-	for (int start_i = start.i, start_j=start.j;
-		start_i >= 0 && start_i < N && start_j >= 0 && start_j < N;
-		start_i += i_delta, start_j += j_delta) {
-		if (board[start_i][start_j] == 0) {
-			return false;
-		}
-		else if (board[start_i][start_j] == id) {
-			return true;
-		}
-	}
-	return false;
-}
-std::vector<Move> possible_moves(int board[N][N], int id) {
-	std::vector<Move> moves;
-	auto opponent_id = get_opponent_id(id);
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < N; j++) {
-			if (board[i][j] == 0) {
-				bool legal = (i < N - 1 && board[i+1][j] == opponent_id && find_player_move(board, id, Move{i+1, j}, 1, 0)) || 
-							 (i >= 1 && board[i-1][j] == opponent_id && find_player_move(board, id, Move{i-1,j}, -1, 0)) || 
-							 (j < N - 1 && board[i][j+1] == opponent_id && find_player_move(board, id, Move{i,j+1}, 0, 1)) || 
-							 (j >= 1 && board[i][j-1] == opponent_id && find_player_move(board, id, Move{i,j-1}, 0, -1)) || 
-							 (i < N - 1 && j < N - 1 && board[i+1][j+1] == opponent_id && find_player_move(board, id, Move{i+1, j+1}, 1, 1)) ||
-							 (i >= 1 && j >= 1 && board[i-1][j-1] == opponent_id && find_player_move(board, id, Move{i-1, j-1}, -1, -1)) || 
-							 (i >= 1 && j < N - 1 && board[i-1][j+1] == opponent_id && find_player_move(board, id, Move{i-1, j+1}, -1, 1)) || 
-							 (i < N - 1 && j >= 1 && board[i+1][j-1] == opponent_id && find_player_move(board, id, Move{i+1, j-1}, 1, -1));
-				if (legal) {
-					moves.push_back(Move{i, j});
-				}
-			}
-		}
-	}
 
-	return moves;
-}
-int get_winner(int board[N][N]) {
-	int ply1_count = 0, ply2_count = 0;
-	for (int i = 0; i < N; ++i) {
-		for (int j = 0; j < N; ++j) {
-			if (board[i][j] == -1) 
-				ply1_count++;
-			else if (board[i][j] == 1) 
-				ply2_count++;
-		}
-	}
-	if (ply1_count > ply2_count) 
-		return -1;
-	else if (ply1_count < ply2_count)
-		return 1;
-	else
-		return 0;
-}
-void update(int board[N][N], Move move, int id) {
-	board[move.i][move.j] = id;
-	auto opponent_id = get_opponent_id(id);
-	std::vector<std::pair<int,int>> deltas;
-	deltas.push_back(std::make_pair(0,1));
-	deltas.push_back(std::make_pair(0,-1));
-	deltas.push_back(std::make_pair(1,0));
-	deltas.push_back(std::make_pair(-1,0));
-	deltas.push_back(std::make_pair(1,-1));
-	deltas.push_back(std::make_pair(-1,1));
-	deltas.push_back(std::make_pair(-1,-1));
-	deltas.push_back(std::make_pair(1,1));
-	//TODO: refactor this ugly code
-	for (const auto& delta : deltas) {
-		if (move.i < N && move.i >= 0 && move.j < N && move.j >= 0 && 
-			find_player_move(board, id, Move{move.i+delta.first, move.j+delta.second}, delta.first, delta.second)) {
-			for (int i = move.i, j = move.j;
-				i + delta.first < N && i + delta.first >= 0 && j + delta.second < N && j + delta.second >= 0;
-				i += delta.first, j += delta.second) {
-				if (board[i+delta.first][j+delta.second] == opponent_id) {
-					board[i+delta.first][j+delta.second] = id;
-				}else {
-					break;
-				}
-			}
-		}
-	}
-}
 
 class AI : public Player {
 public:
