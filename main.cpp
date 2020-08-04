@@ -124,10 +124,12 @@ int main(int argc, char**argv) {
 	//Reversi reversi {std::unique_ptr<Player>(new Human("Human 1")), std::unique_ptr<Player>(new Human("Human 2"))};
 	// Reversi reversi {std::unique_ptr<Player>(new Human("Human")),
 	// 				std::unique_ptr<Player>(new AI("AI"))};
-	Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
-				std::unique_ptr<Player>(new Human("Human"))};
+	// Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
+	// 			std::unique_ptr<Player>(new Human("Human"))};
 	// Reversi reversi {std::unique_ptr<Player>(new AI("AI 1")),
 	// 			std::unique_ptr<Player>(new AI("AI 2"))};
+	Reversi reversi {std::unique_ptr<Player>(new AI_noob("AI noob")),
+					std::unique_ptr<Player>(new AI("AI expert"))};	
 	reversi.run();
 
 	return 0; 

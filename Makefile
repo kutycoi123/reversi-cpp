@@ -6,4 +6,4 @@ main: main.o
 main.o: main.cpp
 	$(CXX) $(FLAGS) -c main.cpp
 clean:
-	rm -f *.o main
+	rm -f *.o *.gch main
