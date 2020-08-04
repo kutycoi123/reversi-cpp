@@ -12,7 +12,7 @@ struct Move{
 };	
 
 inline bool operator==(const Move& lhs, const Move& rhs) {
-	return lhs.i == rhs.i && lhs.i == rhs.i;
+	return lhs.i == rhs.i && lhs.j == rhs.j;
 }
 inline bool operator!=(const Move& lhs, const Move& rhs) {
 	return !(lhs == rhs);
@@ -50,6 +50,7 @@ public:
 class Reversi {
 public:
 	int N = 8;
+	int curr_player_id;
 	const Player* winner = NULL;
 	int board[8][8];
 	std::unique_ptr<Player> ply1;
@@ -69,6 +70,7 @@ public:
 		board[4][4] = -1;
 		this->ply1->score = 2;
 		this->ply2->score = 2;
+		curr_player_id = 1; // first player
 
 	}
 	int get_opponent_id(int id) {
@@ -107,7 +109,7 @@ public:
 
 		return moves;
 	}
-	void display_board() {
+	void display_board(const std::vector<Move>& moves) {
 		std::cout << " ";
 		for (int i = 0; i < N; ++i) {
 			std::cout << " " << i;
@@ -118,7 +120,10 @@ public:
 			for (int j = 0; j < N; ++j) {
 				auto elem = board[i][j];
 				std::cout << "|";
-				if (elem == 0) {
+				Move m{i, j};
+				if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
+					std::cout << "#";
+				}else if (elem == 0) {
 					std::cout << " ";
 				}else if (elem == 1) {
 					std::cout << "X";
@@ -145,23 +150,25 @@ public:
 	}
 
 	void run() {
-		display_board();
+
 		while (true) {
 			auto possible_moves_ply1 = possible_moves(ply1->id);
+			display_board(possible_moves_ply1);
 			if (possible_moves_ply1.size() == 0) {
 				break;
 			}
 			auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
 			update(ply1_move, ply1.get());
 			//ply2.acknowledge(ply1_move)
-			display_board();
+
 			auto possible_moves_ply2 = possible_moves(ply2->id);
+			display_board(possible_moves_ply2);
 			if (possible_moves_ply2.size() == 0) {
 				break;
 			}
 			auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
 			update(ply2_move, ply2.get());
-			display_board();
+			// display_board();
 			// ply1.acknowledge(ply1_move)
 		}
 		auto ply1_score = ply1->score, ply2_score = ply2->score;
@@ -214,7 +221,7 @@ private:
 	}
 };
 
-std::vector<Move> possible_moves(int board[8][8]) {
+std::vector<Move> possible_moves(int board[8][8], int player) {
 	std::vector<Move> moves;
 	return moves;
 }
@@ -277,7 +284,7 @@ public:
 	}
 	TreeNode* expand(TreeNode* node) {
 		if (node->children.size() == 0 && !terminal_test(node->board)) {
-			auto moves = possible_moves(node->board);
+			auto moves = possible_moves(node->board, node->player_id);
 			for (auto& move : moves) {
 				auto child = std::make_unique<TreeNode>(node->player_id*-1, node->board, node);
 				child->board[move.i][move.j] = node->player_id;
