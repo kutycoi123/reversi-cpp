@@ -53,15 +53,7 @@ public:
 				board[i][j] = 0;				
 			}
 		}
-		// board[N/2-1][N/2-1] = -1;
-		// board[N/2-1][N/2] = 1;
-		// board[N/2][N/2-1] = 1;
-		// board[N/2][N/2] = -1;
 
-		// board[N/2-1][N/2-1] = 1;
-		// board[N/2-1][N/2] = -1;
-		// board[N/2][N/2-1] = -1;
-		// board[N/2][N/2] = 1;
 		init_board(board);
 		this->ply1->score = 2;
 		this->ply2->score = 2;

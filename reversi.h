@@ -86,19 +86,10 @@ public:
 	Move next_move(const std::vector<Move>& possible_moves) override {
 		std::cout << "moves size: " << possible_moves.size() << "\n";
 		auto best_move = monte_carlo_tree_search(board);
-		// board[best_move.i][best_move.j] = this->id;
 		update(board, best_move, this->id);
 		return best_move;
 	}
 	AI(const std::string& name) : Player(name) {
-		// board[N/2-1][N/2-1] = -1;
-		// board[N/2-1][N/2] = 1;
-		// board[N/2][N/2-1] = 1;
-		// board[N/2][N/2] = -1;
-		// board[N/2-1][N/2-1] = 1;
-		// board[N/2-1][N/2] = -1;
-		// board[N/2][N/2-1] = -1;
-		// board[N/2][N/2] = 1;	
 		init_board(board);	
 	}
 
@@ -169,10 +160,7 @@ public:
 			auto result = playout(child);
 			backprop(child, result);
 		}
-		//display_board(board, NULL, NULL, possible_moves(root.board, root.player_id));
-		// auto moves = possible_moves(root.board, root.player_id);
-		// std::cout << "Here\n" << root.children.size() << "\n";
-		// std::cout << "possible moves size: " << moves.size() << "\n";
+
 		auto best_child = root.children[0].get();
 		for (auto& child : root.children) {
 			std::cout << child->move.i << " " << child->move.j << "\n";
