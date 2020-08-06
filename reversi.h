@@ -78,7 +78,7 @@ struct AI_HEURISTIC : public AI_MCTS {
 			int rand_index = rand() % root.children.size();
 			auto child = root.children[rand_index].get();
 			auto result = playout(child);
-			// Adding points for "good" child based on its position
+			// Adding points for "good" child based on its move
 			if (is_good_move(child->move)) {
 				child->nWins += 0.75;
 			}
