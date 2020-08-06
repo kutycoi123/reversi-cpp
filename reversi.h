@@ -38,7 +38,7 @@ struct Human : public Player {
 
 
 
-struct AI : public Player {
+struct AI_MCTS : public Player {
 	int board[N][N];
 	void acknowledge(const std::vector<Move>& moves, int id) override {
 		for (auto& move : moves) {
@@ -52,14 +52,24 @@ struct AI : public Player {
 		return best_move;
 	}
 
-	AI(const std::string& name) : Player(name) {
+	AI_MCTS(const std::string& name) : Player(name) {
 		init_board(board);	
 	}
 
-	~AI(){}
+	~AI_MCTS(){}
 };
 
-struct AI_noob : public AI {
+struct AI_HEURISTIC : public AI_MCTS {
+	bool is_good_move(const Move& move) {
+		// https://guides.net4tv.com/games/how-win-reversi#:~:text=The%20basic%20moves%20of%20Reversi,your%20stone%20in%20that%20square.
+		std::vector<Move> good_moves = {
+			Move{0,0}, Move{0,2}, Move{0,5}, Move{0,7},
+			Move{2,0}, Move{2,2}, Move{2,5}, Move{2,7},
+			Move{5,0}, Move{5,2}, Move{5,5}, Move{5,7},
+			Move{7,0}, Move{7,2}, Move{7,5}, Move{7,7}
+		};
+		return std::find(good_moves.begin(), good_moves.end(), move) != good_moves.end();
+	}
 	Move next_move(const std::vector<Move>& possible_moves) override {
 		int NTIMES = 4000;
 		TreeNode root(id, board, NULL);
@@ -68,6 +78,10 @@ struct AI_noob : public AI {
 			int rand_index = rand() % root.children.size();
 			auto child = root.children[rand_index].get();
 			auto result = playout(child);
+			// Adding points for "good" child based on its position
+			if (is_good_move(child->move)) {
+				child->nWins += 0.75;
+			}
 			if (result.first == 0) { // Draw
 				child->nWins += 0.5;
 			} else if (result.first == child->player_id) { // Wins
@@ -86,8 +100,8 @@ struct AI_noob : public AI {
 		update(board, best_move, this->id);
 		return best_move;
 	}
-	AI_noob(const std::string& name) : AI(name) {}
+	AI_HEURISTIC(const std::string& name) : AI_MCTS(name) {}
 
-	~AI_noob(){}
+	~AI_HEURISTIC(){}
 };
 #endif

@@ -17,23 +17,27 @@ void display_board(int board[N][N], const Player* ply1, const Player*ply2, const
 		std::cout << " " << i;
 	}
 	std::cout << "\n";
-	for (int i = 0; i < N; ++i) {
-		std::cout << i;
-		for (int j = 0; j < N; ++j) {
-			auto elem = board[i][j];
-			std::cout << "|";
-			Move m{i, j};
-			if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
-				std::cout << "#";
-			}else if (elem == 0) {
-				std::cout << " ";
-			}else if (elem == ply1->id) {
-				std::cout << "X";
-			}else {
-				std::cout << "O";
+	for (int i = 0; i < N*2+1; ++i) {
+		if (i % 2 == 0) {
+			std::cout << " -----------------\n";
+		}else{
+			std::cout << (i-1)/2;
+			for (int j = 0; j < N; ++j) {
+				auto elem = board[(i-1)/2][j];
+				std::cout << "|";
+				Move m{(i-1)/2, j};
+				if (std::find(moves.begin(), moves.end(), m) != moves.end()) {
+					std::cout << "#";
+				}else if (elem == 0) {
+					std::cout << " ";
+				}else if (elem == ply1->id) {
+					std::cout << "X";
+				}else {
+					std::cout << "O";
+				}
 			}
+			std::cout << "|\n";
 		}
-		std::cout << "|\n";
 	}
 
 }
@@ -103,9 +107,13 @@ struct Reversi {
 				ply1->score -= new_updated_moves.size() - 1;
 				ply1->acknowledge(new_updated_moves, ply2->id);		
 				std::cout << ply2->name << " made a move: " << "(" << ply2_move.i << "," << ply2_move.j << ")\n";						
-			} else if (no_more_moves){
-				std::cout << "No more valid moves for both players. Game end!!!\n";
-				break;
+			} else {
+				if (no_more_moves){
+					std::cout << "No more valid moves for both players. Game end!!!\n";
+					break;
+				}else {
+					std::cout << ply1->name << " has no valid moves to make\n";
+				}
 			}
 			std::cout << "\n";
 		}
@@ -125,12 +133,14 @@ int main(int argc, char**argv) {
 	//Reversi reversi {std::unique_ptr<Player>(new Human("Human 1")), std::unique_ptr<Player>(new Human("Human 2"))};
 	// Reversi reversi {std::unique_ptr<Player>(new Human("Human")),
 	// 				std::unique_ptr<Player>(new AI("AI"))};
-	Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
-				std::unique_ptr<Player>(new Human("Human"))};
+	// Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
+	// 			std::unique_ptr<Player>(new Human("Human"))};
 	// Reversi reversi {std::unique_ptr<Player>(new AI("AI 1")),
 	// 			std::unique_ptr<Player>(new AI("AI 2"))};
-	// Reversi reversi {std::unique_ptr<Player>(new AI_noob("AI noob")),
-	// 				std::unique_ptr<Player>(new AI("AI expert"))};	
+	// Reversi reversi {std::unique_ptr<Player>(new AI_MCTS("AI expert")),
+	// 				std::unique_ptr<Player>(new AI_HEURISTIC("AI noob"))};			
+	Reversi reversi {std::unique_ptr<Player>(new AI_HEURISTIC("AI heuristic")), 
+					std::unique_ptr<Player>(new AI_MCTS("AI mcts"))};									
 	reversi.run();
 
 	return 0; 
