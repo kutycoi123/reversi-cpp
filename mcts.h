@@ -100,8 +100,8 @@ static std::pair<int, double> playout(TreeNode* node) {
 }
 
 static void backprop(TreeNode* node, int result){
-	if (result > 0) {
-		node->nWins += result;
+	if (result > 0 || abs(result) == 0.5) {
+		node->nWins += abs(result);
 	}
 	node->nVisited++;
 	if (node->parent) {
@@ -109,7 +109,7 @@ static void backprop(TreeNode* node, int result){
 	}
 }
 
-static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 5000) {
+static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 2000) {
 	TreeNode root(id, board, NULL);
 	for (int i = 0; i < NTIMES; ++i) {
 		auto leaf = select(&root);
@@ -127,4 +127,36 @@ static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 5000) 
 	return best_child->move;
 }
 
+bool is_good_move(const Move& move) {
+	// https://guides.net4tv.com/games/how-win-reversi#:~:text=The%20basic%20moves%20of%20Reversi,your%20stone%20in%20that%20square.
+	std::vector<Move> good_moves = {
+		Move{0,0}, Move{0,2}, Move{0,5}, Move{0,7},
+		Move{2,0}, Move{2,2}, Move{2,5}, Move{2,7},
+		Move{5,0}, Move{5,2}, Move{5,5}, Move{5,7},
+		Move{7,0}, Move{7,2}, Move{7,5}, Move{7,7}
+	};
+	return std::find(good_moves.begin(), good_moves.end(), move) != good_moves.end();
+}
+
+static Move monte_carlo_tree_search_with_heu(int board[N][N], int id, int NTIMES = 2000) {
+	TreeNode root(id, board, NULL);
+
+	for (int i = 0; i < NTIMES; ++i) {
+		auto leaf = select(&root);
+		auto child = expand(leaf);
+		if (is_good_move(child->move)) {
+			child->nWins += 0.75;
+		}
+		auto result = playout(child);
+		backprop(child, result.second);
+	}
+
+	auto best_child = root.children[0].get();
+	for (auto& child : root.children) {
+		if (child->nVisited > best_child->nVisited) {
+			best_child = child.get();
+		}
+	}
+	return best_child->move;	
+}
 #endif

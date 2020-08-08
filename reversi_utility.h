@@ -19,10 +19,15 @@ inline bool operator!=(const Move& lhs, const Move& rhs) {
 }
 
 static void init_board(int b[N][N]) {
-		b[N/2-1][N/2-1] = 1;
-		b[N/2-1][N/2] = -1;
-		b[N/2][N/2-1] = -1;
-		b[N/2][N/2] = 1;
+	for (int i = 0; i < N; ++i) {
+		for (int j = 0; j < N; ++j) {
+			b[i][j] = 0;
+		}
+	}
+	b[N/2-1][N/2-1] = 1;
+	b[N/2-1][N/2] = -1;
+	b[N/2][N/2-1] = -1;
+	b[N/2][N/2] = 1;
 }
 
 static int get_opponent_id(int id) {

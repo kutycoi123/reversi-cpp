@@ -1,5 +1,5 @@
 CXX = g++
-FLAGS = -Wall -g
+FLAGS = -Wall -g -pthread
 
 main: main.o 
 	$(CXX) $(FLAGS) -o main main.o
