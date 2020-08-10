@@ -173,7 +173,7 @@ int main(int argc, char**argv) {
 	for (int i = 0; i < threads.size(); ++i) {
 		threads[i].join();
 	}
-	std::cout << "AI heuristic wins: " << ai_heuristic_wins << "\n";
+	std::cout << "AI heuristic mcts wins: " << ai_heuristic_wins << "\n";
 	std::cout << "AI mcts wins: " << ai_mcts_wins << "\n";
 	std::cout << "Draws: " << draws << "\n";
 	return 0; 
