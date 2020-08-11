@@ -6,13 +6,12 @@
 #include <utility>
 #include <time.h>
 #include <stdlib.h>
-#include <thread>
-#include <mutex>
+
 #include "reversi.h"
 
+/* Display the game board */
 void display_board(int board[N][N], const Player* ply1, const Player*ply2, const std::vector<Move>& moves = {}) {
-	std::cout << "Scores:  " << ply1->name << ": " << ply1->score  << "  "
-			  << ply2->name << ": " << ply2->score << "\n";
+
 	std::cout << " ";
 	for (int i = 0; i < N; ++i) {
 		std::cout << " " << i;
@@ -40,9 +39,11 @@ void display_board(int board[N][N], const Player* ply1, const Player*ply2, const
 			std::cout << "|\n";
 		}
 	}
+	std::cout << "Scores:  " << ply1->name << ": " << ply1->score  << "  "
+			  << ply2->name << ": " << ply2->score << "\n";	
 
 }
-
+/* Main class for Reversi game */
 struct Reversi {
 	int curr_player_id;
 	const Player* winner = NULL;
@@ -80,45 +81,54 @@ struct Reversi {
 
 	}
 
+	/* Start then game */
 	void run() {
-
+		std::cout << "\n============ Game started!!! ===============\n";
+		std::cout << "Symbols meaning:\n";
+		std::cout << "    X: First player's move\n";
+		std::cout << "    O: Second player's move\n";
+		std::cout << "    #: Valid move that current player can take in their turns\n\n";
 		while (true) {
+			/* Player 1 turn */ 
 			auto no_more_moves = false;
 			auto possible_moves_ply1 = possible_moves(board, ply1->id);
-			//display_board(board, ply1.get(), ply2.get(), possible_moves_ply1);
-			//std::cout << "Turn for: " << ply1->name << "\n";
+			display_board(board, ply1.get(), ply2.get(), possible_moves_ply1);
+			std::cout << "Current player: " << ply1->name << "\n";
 			if (possible_moves_ply1.size() != 0) {
 				auto ply1_move = get_player_move(ply1.get(), possible_moves_ply1);
 				auto new_updated_moves = update(board, ply1_move, ply1->id);
 				ply1->score += new_updated_moves.size();
 				ply2->score -= new_updated_moves.size() - 1;
 				ply2->acknowledge(new_updated_moves, ply1->id);
-			//	std::cout << ply1->name << " made a move: " << "(" << ply1_move.i << "," << ply1_move.j << ")\n";
+				std::cout << ply1->name << " made a move: " << "(" << ply1_move.i << "," << ply1_move.j << ")\n";
 			} else {
 				no_more_moves = true;
-			//	std::cout << ply1->name << " has no valid moves to make\n";
+				std::cout << ply1->name << " has no valid moves to make\n";
 			}
-			//std::cout << "\n";
+			std::cout << "\n";
+
+			/* Player 2 turn */
 			auto possible_moves_ply2 = possible_moves(board, ply2->id);
-			//display_board(board, ply1.get(), ply2.get(), possible_moves_ply2);
-			//std::cout << "Turn for: " << ply2->name << "\n";						
+			display_board(board, ply1.get(), ply2.get(), possible_moves_ply2);
+			std::cout << "Current player: " << ply2->name << "\n";						
 			if (possible_moves_ply2.size() != 0) {
 				auto ply2_move = get_player_move(ply2.get(), possible_moves_ply2);
 				auto new_updated_moves = update(board, ply2_move, ply2->id);
 				ply2->score += new_updated_moves.size();
 				ply1->score -= new_updated_moves.size() - 1;
 				ply1->acknowledge(new_updated_moves, ply2->id);		
-			//	std::cout << ply2->name << " made a move: " << "(" << ply2_move.i << "," << ply2_move.j << ")\n";						
+				std::cout << ply2->name << " made a move: " << "(" << ply2_move.i << "," << ply2_move.j << ")\n";						
 			} else {
 				if (no_more_moves){
-			//		std::cout << "No more valid moves for both players. Game end!!!\n";
+					std::cout << "No more valid moves for both players. Game end!!!\n";
 					break;
 				}else {
-			//		std::cout << ply1->name << " has no valid moves to make\n";
+					std::cout << ply1->name << " has no valid moves to make\n";
 				}
 			}
-			//std::cout << "\n";
+			std::cout << "\n";
 		}
+		/* Print out scores of 2 players */
 		auto ply1_score = ply1->score, ply2_score = ply2->score;
 		if (ply1_score > ply2_score) {
 			std::cout << "Player " << ply1->name << " has won with " << ply1_score << " scores \n";
@@ -127,18 +137,72 @@ struct Reversi {
 			std::cout << "Player " << ply2->name << " has won with " << ply2_score << " scores \n";
 			winner = ply2.get();
 		} else {
-			std::cout << "Draw!!!";
+			std::cout << "Draw!!!\n";
 		}
 	}
 };
+
+
+void human_vs_AI() {
+	int option;
+	while (true) {
+		std::cout << "Choose 1 for human to go first, 2 for AI to go first: ";
+		std::cin >> option;
+		if (option == 1) {
+			Reversi reversi(std::unique_ptr<Player>(new Human("Human")), 
+							std::unique_ptr<Player>(new AI_MCTS("AI pure mcts")));
+			reversi.run();
+			break;
+		} else if (option == 2) {
+			Reversi reversi(std::unique_ptr<Player>(new AI_MCTS("AI pure mcts")), 
+							std::unique_ptr<Player>(new Human("Human")));
+			reversi.run();
+			break;
+		} else {
+			std::cout << "Option not found\n";
+		}
+	}	
+}
+void AI_vs_AI() {
+	Reversi reversi(std::unique_ptr<Player>(new AI_HEURISTIC("AI mcts with heuristic")), 
+					std::unique_ptr<Player>(new AI_MCTS("AI pure mcts")));
+	reversi.run();
+}
+int main(int argc, char**argv) {
+	srand (time(NULL));
+	int option;
+	std::cout << "================= Welcome to Reversi ===================\n";
+	std::cout << "1. Human vs AI\n";
+	std::cout << "2. AI vs AI\n";
+	while (true) {
+		std::cout << "Please choose option 1 or 2: ";
+		std::cin >> option;
+		if (option == 1) {
+			human_vs_AI();
+			break;
+		} else if (option == 2) {
+			AI_vs_AI();
+			break;
+		} else {
+			std::cout << "Option not found\n";
+		}
+	}
+}
+
+// Comment out above main function and 
+// uncomment below code if you want to let both AI play against with each other for 100 games
+/*
+#include <thread>
+#include <mutex>
 int ai_heuristic_wins = 0;
 int ai_mcts_wins = 0;
 int draws = 0;
+int NGAMES = 10;
 std::mutex ai_heuristic_wins_mut;
 std::mutex ai_mcts_wins_mut;
 std::mutex draws_mut;
 
-void run_reversi() {
+void run_reversi_thread() {
 	Reversi reversi {std::unique_ptr<Player>(new AI_HEURISTIC("AI heuristic"))
 					,std::unique_ptr<Player>(new AI_MCTS("AI mcts"))};
 	reversi.run();
@@ -155,20 +219,10 @@ void run_reversi() {
 }
 int main(int argc, char**argv) {
 	srand (time(NULL));
-	//Reversi reversi {std::unique_ptr<Player>(new Human("Human 1")), std::unique_ptr<Player>(new Human("Human 2"))};
-	// Reversi reversi {std::unique_ptr<Player>(new Human("Human")),
-	// 				std::unique_ptr<Player>(new AI("AI"))};
-	// Reversi reversi {std::unique_ptr<Player>(new AI("AI")),
-	// 			std::unique_ptr<Player>(new Human("Human"))};
-	// Reversi reversi {std::unique_ptr<Player>(new AI("AI 1")),
-	// 			std::unique_ptr<Player>(new AI("AI 2"))};
-	// Reversi reversi {std::unique_ptr<Player>(new AI_MCTS("AI expert")),
-	// 				std::unique_ptr<Player>(new AI_HEURISTIC("AI noob"))};	
 	std::vector<std::thread> threads;
-	for (int i = 0; i < 100; ++i){
+	for (int i = 0; i < NGAMES; ++i){
 		std::cout << "===================== NEW GAME =========================\n";
-		threads.push_back(std::thread(run_reversi));
-		// run_reversi();
+		threads.push_back(std::thread(run_reversi_thread));
 	}
 	for (int i = 0; i < threads.size(); ++i) {
 		threads[i].join();
@@ -178,3 +232,4 @@ int main(int argc, char**argv) {
 	std::cout << "Draws: " << draws << "\n";
 	return 0; 
 }
+*/

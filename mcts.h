@@ -46,20 +46,20 @@ struct TreeNode {
 	}
 
 };
-
+/* Select a best child among children state*/
 static TreeNode* select(TreeNode* node) {
 	if (node != NULL && node->children.size() != 0) {
 		return select(node->best_child());
 	}
 	return node;
 }
-
+/* Expand the child to have more children state if possible */
 static TreeNode* expand(TreeNode* node) {
 	if (node->children.size() == 0 ) {
 		auto moves = possible_moves(node->board, node->player_id);
 		if (moves.size() > 0) {
 			for (auto& move : moves) {
-				auto child = std::make_unique<TreeNode>(node->player_id*-1, node->board, node);
+				auto child = std::unique_ptr<TreeNode>(new TreeNode(node->player_id*-1, node->board, node));
 				child->move = Move{move.i, move.j};
 				// child->board[move.i][move.j] = node->player_id;
 				update(child->board, child->move, node->player_id);
@@ -69,7 +69,7 @@ static TreeNode* expand(TreeNode* node) {
 	}
 	return select(node);
 }
-
+/* Perform game playout by randomly select next moves */
 static std::pair<int, double> playout(TreeNode* node) {
 	auto cur_player = node->player_id;
 	int copied_board[N][N];
@@ -98,7 +98,7 @@ static std::pair<int, double> playout(TreeNode* node) {
 		return std::make_pair(winner, -1);
 	return std::make_pair(winner, 1);
 }
-
+/* Back-propagate random playout result to parent state*/
 static void backprop(TreeNode* node, int result){
 	if (result > 0 || abs(result) == 0.5) {
 		node->nWins += abs(result);
@@ -108,8 +108,8 @@ static void backprop(TreeNode* node, int result){
 		backprop(node->parent, -result);
 	}
 }
-
-static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 2000) {
+/* Perform pure mcts algorithm*/
+static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 5000) {
 	TreeNode root(id, board, NULL);
 	for (int i = 0; i < NTIMES; ++i) {
 		auto leaf = select(&root);
@@ -127,8 +127,11 @@ static Move monte_carlo_tree_search(int board[N][N], int id, int NTIMES = 2000) 
 	return best_child->move;
 }
 
+/* 	Heuristic to determin a good move
+	Strategy is inspired by this link: https://guides.net4tv.com/games/how-win-reversi#:~:text=The%20basic%20moves%20of%20Reversi,your%20stone%20in%20that%20square.
+*/
 bool is_good_move(const Move& move) {
-	// https://guides.net4tv.com/games/how-win-reversi#:~:text=The%20basic%20moves%20of%20Reversi,your%20stone%20in%20that%20square.
+
 	std::vector<Move> good_moves = {
 		Move{0,0}, Move{0,2}, Move{0,5}, Move{0,7},
 		Move{2,0}, Move{2,2}, Move{2,5}, Move{2,7},
@@ -137,8 +140,8 @@ bool is_good_move(const Move& move) {
 	};
 	return std::find(good_moves.begin(), good_moves.end(), move) != good_moves.end();
 }
-
-static Move monte_carlo_tree_search_with_heu(int board[N][N], int id, int NTIMES = 2000) {
+/* Perform mcts algorithm with the above heuristic */
+static Move monte_carlo_tree_search_with_heu(int board[N][N], int id, int NTIMES = 5000) {
 	TreeNode root(id, board, NULL);
 
 	for (int i = 0; i < NTIMES; ++i) {

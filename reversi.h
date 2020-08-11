@@ -10,7 +10,9 @@ struct Player {
 	int id;
 	int score;
 	std::string name;
+	/* Return the next move for the current player*/
 	virtual Move next_move(const std::vector<Move>&) = 0;
+	/* Called when the opponent made a move */
 	virtual void acknowledge(const std::vector<Move>&, int) = 0;
 	void set_id(int id) {
 		this->id = id;
@@ -28,15 +30,15 @@ struct Human : public Player {
 		std::cin >> j;
 		return Move{i,j};
 	}
+
 	void acknowledge(const std::vector<Move>& moves, int id) override {
 
 	}
+
 	Human(const std::string& name) : Player(name) {}
+
 	~Human(){}
 };
-
-
-
 
 struct AI_MCTS : Player {
 	int board[N][N];
@@ -65,6 +67,7 @@ struct AI_HEURISTIC : AI_MCTS {
 		update(board, best_move, this->id);
 		return best_move;		
 	}
+
 	AI_HEURISTIC(const std::string& name) : AI_MCTS(name) {
 
 	}
