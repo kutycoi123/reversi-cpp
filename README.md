@@ -1,1 +1,1 @@
-# Reversi gaeme
+# Reversi game
